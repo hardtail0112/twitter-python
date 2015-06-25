@@ -1,0 +1,82 @@
+#!/usr/local/bin/python
+#-*- coding: utf-8 -*-
+import tweepy, urllib, urllib2, json, account,post
+import sys, codecs,time
+
+usr = 'server'
+consumer_key    = account.consumer_key[usr]
+consumer_secret = account.consumer_secret[usr]
+access_key      = account.access_token_key[usr]
+access_secret   = account.access_token_secret[usr]
+
+api = post.SetTwitterApi(usr)
+
+def main():    
+    url = "https://userstream.twitter.com/2/user.json"
+    param = {"delimited":"length"}
+    header = {}
+    auth = tweepy.OAuthHandler(consumer_key,consumer_secret)
+    auth.set_access_token(access_key,access_secret)
+    auth.apply_auth(url,"POST",header,param)
+    req = urllib2.Request(url)
+    req.add_header("Authorization",header["Authorization"])
+    r = urllib2.urlopen(req,urllib.urlencode(param),90)
+    while True:
+        len = ""
+        while True:
+            c = r.read(1)
+            if c=="\n": break
+#            if c=="": raise Exception
+            len += c
+        len = len.strip()
+        if not len.isdigit(): continue
+        t = json.loads(r.read(int(len)))
+        if ("user" in t and "text" in t and "created_at" in t and "id" in t and
+                 "hardtail_server"!= t["user"]["screen_name"] ):
+            flag = 0
+            
+            if u"にゃんぱす" in t["text"] :
+               rpText = "@" + t["user"]["screen_name"] + u" にゃんぱす～"
+               flag =1
+                  
+            if t["text"] == u"にゃん" :
+               rpText = "@" + t["user"]["screen_name"] + u" ぱすー"            
+               flag = 1
+               
+            if u"むくり" in t["text"] :
+               rpText = "@" + t["user"]["screen_name"] + u" おはようじょ"
+               flag =1
+               
+            if (u"帰宅" in t["text"] or u"北区" in t["text"] ):
+               rpText = "@" + t["user"]["screen_name"] +u" おかえりんこ"
+               flag =1
+            
+            if (u"ただいま" in t["text"] ):
+               rpText = "@" + t["user"]["screen_name"] 
+               rpText += u" おつかれさまなのん"
+               flag =1
+            
+            if (u"おっぱい" in t["text"] ):
+               rpText = "@" + t["user"]["screen_name"]
+               rpText += u" └(・ω・)」ぼいんぼいん L(・ω・)┘"
+               flag =1
+            
+            if 'streamtest' in t["text"]:
+               rpText = "@" + t["user"]["screen_name"] + u" Process is running"
+               rpText += "\n" + time.ctime()
+               flag =1
+            
+            if flag != 0 and not("RT" in t["text"]):
+               rp = api.GetUserTimeline()
+               i = 0
+               while i<11:
+                  if  rpText in rp[i].text:
+                     rpText += u'～'
+                     i = 0
+                  i += 1
+               
+               api.PostUpdate(status=rpText,in_reply_to_status_id=t["id"])
+                              
+
+if __name__=="__main__":
+    main()
